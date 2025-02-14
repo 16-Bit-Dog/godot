@@ -1,0 +1,12 @@
+1. add basic slang stuff somehow
+...
+
+deal with magic variables like `ALBEDO` by using properties n stuff ig
+
+deal with `shader_type spatial;` by using custom attributes `[shader_type("spatial")]` or whatever
+
+if file reflection does not contain `light`, load file with default `light` function 
+
+shader_cache folder
+
+n. test build process on all targets

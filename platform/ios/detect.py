@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from methods import detect_darwin_sdk_path, print_error, print_warning
 from platform_methods import validate_arch
 
+from slang_methods import install_slang
+
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
@@ -176,3 +178,6 @@ def configure(env: "SConsEnvironment"):
                 "$IOS_SDK_PATH/System/Library/Frameworks/OpenGLES.framework/Headers",
             ]
         )
+
+    if env["slang"]:
+        install_slang(env, get_name(), env["arch"])

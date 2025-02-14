@@ -8,6 +8,8 @@ import methods
 from methods import print_error, print_warning
 from platform_methods import detect_arch, validate_arch
 
+from slang_methods import install_slang
+
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
@@ -557,6 +559,9 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             LIBS += ["dxgi", "d3d9", "d3d11"]
         env.Prepend(CPPPATH=["#thirdparty/angle/include"])
 
+    if env["slang"]:
+        install_slang(env, get_name(), env["arch"])
+
     if env["target"] in ["editor", "template_debug"]:
         LIBS += ["psapi", "dbghelp"]
 
@@ -940,7 +945,6 @@ def check_d3d12_installed(env):
             "https://docs.godotengine.org/en/latest/contributing/development/compiling/compiling_for_windows.html"
         )
         sys.exit(255)
-
 
 def validate_win_version(env):
     if int(env["target_win_version"], 16) < 0x0601:

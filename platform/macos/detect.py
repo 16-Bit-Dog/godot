@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from methods import detect_darwin_sdk_path, get_compiler_version, is_apple_clang, print_error, print_warning
 from platform_methods import detect_arch, detect_mvk, validate_arch
 
+from slang_methods import install_slang
+
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
@@ -270,6 +272,9 @@ def configure(env: "SConsEnvironment"):
                     "MoltenVK SDK installation directory not found, use 'vulkan_sdk_path' SCons parameter to specify SDK path."
                 )
                 sys.exit(255)
+
+    if env["slang"]:
+        install_slang(env, get_name(), env["arch"])
 
     if len(extra_frameworks) > 0:
         frameworks = [item for key in extra_frameworks for item in ["-framework", key]]

@@ -203,6 +203,7 @@ opts.Add(BoolVariable("d3d12", "Enable the Direct3D 12 rendering driver on suppo
 opts.Add(BoolVariable("metal", "Enable the Metal rendering driver on supported platforms (Apple arm64 only)", False))
 opts.Add(BoolVariable("openxr", "Enable the OpenXR driver", True))
 opts.Add(BoolVariable("use_volk", "Use the volk library to load the Vulkan loader dynamically", True))
+opts.Add(BoolVariable("slang", "Enable Slang support", False))
 opts.Add(BoolVariable("disable_exceptions", "Force disabling exception handling code", True))
 opts.Add("custom_modules", "A list of comma-separated directory paths containing custom modules to build.", "")
 opts.Add(BoolVariable("custom_modules_recursive", "Detect custom modules recursively for each specified path.", True))

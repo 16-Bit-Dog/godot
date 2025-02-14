@@ -13,7 +13,7 @@ from misc.utility.color import Ansi
 # Base Godot dependencies path
 # If cross-compiling (no LOCALAPPDATA), we install in `bin`
 deps_folder = os.getenv("LOCALAPPDATA")
-if deps_folder:
+if not deps_folder:
     deps_folder = os.path.join(deps_folder, "Godot", "build_deps")
 else:
     deps_folder = os.path.join("bin", "build_deps")

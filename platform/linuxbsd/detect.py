@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from methods import get_compiler_version, print_error, print_info, print_warning, using_gcc
 from platform_methods import detect_arch, validate_arch
 
+from slang_methods import install_slang
+
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
@@ -473,6 +475,9 @@ def configure(env: "SConsEnvironment"):
 
     if env["opengl3"]:
         env.Append(CPPDEFINES=["GLES3_ENABLED"])
+
+    if env["slang"]:
+        install_slang(env, get_name(), env["arch"])
 
     env.Append(LIBS=["pthread"])
 

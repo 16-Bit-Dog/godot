@@ -16,6 +16,8 @@ from SCons.Util import WhereIs
 from methods import get_compiler_version, print_error, print_info, print_warning
 from platform_methods import validate_arch
 
+from slang_methods import install_slang
+
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
@@ -287,3 +289,6 @@ def configure(env: "SConsEnvironment"):
     # This workaround creates a closure that prevents the garbage collector from freeing the WebGL context.
     # We also only use WebGL2, and changing context version is not widely supported anyway.
     env.Append(LINKFLAGS=["-sGL_WORKAROUND_SAFARI_GETCONTEXT_BUG=0"])
+
+    if env["slang"]:
+        install_slang(env, get_name(), env["arch"])

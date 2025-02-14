@@ -156,6 +156,10 @@ if env["builtin_zstd"]:
 
     env_thirdparty.add_source_files(thirdparty_obj, thirdparty_zstd_sources)
 
+if env["slang"]:
+    slangInclude = os.path.join(env["slang_path"], "include")
+    env_thirdparty.Prepend(CPPPATH=[slangInclude])
+    env.Prepend(CPPPATH=[slangInclude])
 
 env.core_sources += thirdparty_obj
 

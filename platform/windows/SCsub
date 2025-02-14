@@ -83,6 +83,19 @@ if env["windows_subsystem"] == "gui":
     env_wrap.Depends(prog_wrap, prog)
     sources += common_win_wrap + res_wrap_obj
 
+if env["slang"]:
+    # print("slang_path: "+env["slang_path"])
+    slang_dlls = ["slang.dll", "slang-glslang.dll"]
+    for dll in slang_dlls:
+        env.Depends(
+            prog,
+            env.Command(
+                "#bin/" + dll,
+                env["slang_path"] + "/bin/"+dll,
+                Copy("$TARGET", "$SOURCE"),
+            )
+        )
+
 if env["d3d12"]:
     dxc_target_aliases = {
         "x86_32": "x86",
@@ -110,9 +123,9 @@ if env["d3d12"]:
         target_dir = arch_bin_dir if env["agility_sdk_multiarch"] else "#bin"
         for dll in agility_dlls:
             env.Command(
-                target_dir + "/" + dll,
-                env["agility_sdk_path"] + "/build/native/bin/" + agility_arch_subdir + "/" + dll,
-                Copy("$TARGET", "$SOURCE"),
+              target_dir + "/" + dll,
+               env["agility_sdk_path"] + "/build/native/bin/" + agility_arch_subdir + "/" + dll,
+               Copy("$TARGET", "$SOURCE"),
             )
 
     # PIX
