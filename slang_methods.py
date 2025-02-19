@@ -97,4 +97,4 @@ def install_slang(env: "SConsEnvironment", platformName, archName):
         env.Append(LINKFLAGS=["slang.lib"])
     else:
         env.Append(LIBS=["slang"])
-    env.Append(CPPDEFINES=os.path.join(env["slang_path"], "bin"))
+    # env.Append(CPPDEFINES=[os.path.realpath(os.path.join(env["slang_path"], "bin")])
