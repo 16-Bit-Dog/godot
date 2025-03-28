@@ -5,6 +5,7 @@ import urllib.request
 from methods import print_error, print_warning
 import os
 from typing import TYPE_CHECKING
+from misc.utility.scons_hints import *
 
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
@@ -97,4 +98,8 @@ def install_slang(env: "SConsEnvironment", platformName, archName):
         env.Append(LINKFLAGS=["slang.lib"])
     else:
         env.Append(LIBS=["slang"])
-    # env.Append(CPPDEFINES=[os.path.realpath(os.path.join(env["slang_path"], "bin")])
+    slang_include_dir = os.path.relpath(os.path.join(env["slang_path"], "bin"))
+    if not env.msvc:
+        env.Append(CPPFLAGS=["-isystem", Dir(slang_include_dir).path])
+    else:
+        env.Prepend(CPPPATH=[slang_include_dir])
