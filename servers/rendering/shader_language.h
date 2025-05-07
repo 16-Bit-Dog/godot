@@ -40,6 +40,7 @@
 #include "core/typedefs.h"
 #include "core/variant/variant.h"
 #include "scene/resources/shader_include.h"
+#include "servers/rendering/shader_code.h"
 
 #ifdef DEBUG_ENABLED
 #include "shader_warnings.h"
@@ -1207,6 +1208,8 @@ public:
 	void clear();
 
 	static String get_shader_type(const String &p_code);
+	static String get_shader_type(ShaderCode &p_code);
+
 	static bool is_builtin_func_out_parameter(const String &p_name, int p_param);
 
 	struct ShaderCompileInfo {

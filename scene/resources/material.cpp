@@ -35,6 +35,7 @@
 #include "core/error/error_macros.h"
 #include "core/version.h"
 #include "scene/main/scene_tree.h"
+#include "servers/rendering/slang_shader_processor.h"
 
 void Material::set_next_pass(const Ref<Material> &p_pass) {
 	for (Ref<Material> pass_child = p_pass; pass_child.is_valid(); pass_child = pass_child->get_next_pass()) {
@@ -1929,8 +1930,12 @@ void fragment() {)";
 
 	code += "}\n";
 
+	ShaderCode preprocessed_code = ShaderCode(ShaderLanguageType_slang);
+	SlangShaderProcessor shader_processor;
+	preprocessed_code.getCode() = code;
+
 	ShaderData shader_data;
-	shader_data.shader = RS::get_singleton()->shader_create_from_code(code);
+	shader_data.shader = RS::get_singleton()->shader_create_from_code(preprocessed_code);
 	shader_data.users = 1;
 	shader_map[mk] = shader_data;
 	shader_rid = shader_data.shader;

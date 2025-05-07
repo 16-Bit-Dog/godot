@@ -1,0 +1,15 @@
+TODO: redo approach
+1. get basic godot stuff to compile as slang
+2. how? wrap all strings to ShaderCode { type, p_code }
+3. pass string+shader type around, add AST if needed
+
+3. when actual data is needed about shader just get AST; if I just need shader type reuse godot thing
+	* later --> compile and use AST
+
+3. fix visaul shader detection and make it work later, not important rn
+	* vshader fails since save type is 
+	--> clearly I am adding property to wrong are
+
+NOW:
+1. figure out why visual shader is not saving "slang" type shader data for lang type --> done
+2. all raw use of code strings to ShaderCode { type, p_code }, delay AST as much as possible, if we AST we cache the AST pass

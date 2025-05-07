@@ -1700,6 +1700,10 @@ static const char *type_string[VisualShader::TYPE_MAX] = {
 
 bool VisualShader::_set(const StringName &p_name, const Variant &p_value) {
 	String prop_name = p_name;
+	if (prop_name == "language") {
+		set_shader_language_type((String)p_value);
+		return true;
+	}
 	if (prop_name == "mode") {
 		set_mode(Shader::Mode(int(p_value)));
 		return true;
@@ -1791,6 +1795,10 @@ bool VisualShader::_set(const StringName &p_name, const Variant &p_value) {
 
 bool VisualShader::_get(const StringName &p_name, Variant &r_ret) const {
 	String prop_name = p_name;
+	if (prop_name == "language") {
+		r_ret = get_shader_language_type_string();
+		return true;
+	}
 	if (prop_name == "mode") {
 		r_ret = get_mode();
 		return true;
@@ -1882,6 +1890,9 @@ void VisualShader::reset_state() {
 }
 
 void VisualShader::_get_property_list(List<PropertyInfo> *p_list) const {
+	//language
+	p_list->push_back(PropertyInfo(Variant::STRING, PNAME("language"), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+
 	//mode
 	p_list->push_back(PropertyInfo(Variant::INT, PNAME("mode"), PROPERTY_HINT_ENUM, "Spatial,CanvasItem,Particles,Sky,Fog"));
 	//render modes
@@ -3066,11 +3077,13 @@ VisualShader::VisualShader() {
 			output->shader_mode = shader_mode;
 			graph[i].nodes[NODE_ID_OUTPUT].node = output;
 		}
-
 		graph[i].nodes[NODE_ID_OUTPUT].position = Vector2(400, 150);
 	}
 }
 
+void VisualShader::try_set_shader_language_type(const String &p_shader_language_type) {
+
+}
 ///////////////////////////////////////////////////////////
 
 const VisualShaderNodeInput::Port VisualShaderNodeInput::ports[] = {

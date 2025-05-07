@@ -177,6 +177,9 @@ protected:
 	virtual void reset_state() override;
 
 public: // internal methods
+
+	virtual void try_set_shader_language_type(const String &p_shader_language_type) override final;
+
 	void set_shader_type(Type p_type);
 	Type get_shader_type() const;
 

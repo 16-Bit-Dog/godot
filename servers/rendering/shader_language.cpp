@@ -10829,6 +10829,10 @@ String ShaderLanguage::get_shader_type(const String &p_code) {
 	return String();
 }
 
+String ShaderLanguage::get_shader_type(ShaderCode &shader_code) {
+	return get_shader_type(shader_code.getCode());
+}
+
 bool ShaderLanguage::is_builtin_func_out_parameter(const String &p_name, int p_param) {
 	int i = 0;
 	while (builtin_func_out_args[i].name) {

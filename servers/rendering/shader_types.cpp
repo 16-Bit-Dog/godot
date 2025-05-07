@@ -46,6 +46,10 @@ const List<String> &ShaderTypes::get_types_list() const {
 	return shader_types_list;
 }
 
+const List<String> &ShaderTypes::get_shader_language_types_list() const {
+	return shader_language_types_list;
+}
+
 ShaderTypes *ShaderTypes::singleton = nullptr;
 
 static ShaderLanguage::BuiltInInfo constt(ShaderLanguage::DataType p_type) {
@@ -499,4 +503,7 @@ ShaderTypes::ShaderTypes() {
 	for (const String &type : shader_types_list) {
 		shader_types.insert(type);
 	}
+
+	shader_language_types_list.push_back("gdshader");
+	shader_language_types_list.push_back("slang");
 }

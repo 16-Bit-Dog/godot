@@ -244,7 +244,8 @@ public:
 
 	FUNCRIDSPLIT(shader)
 
-	virtual RID shader_create_from_code(const String &p_code, const String &p_path_hint = String()) override {
+	virtual RID shader_create_from_code(ShaderCode &shader_code, const String &p_path_hint = String()) override {
+		auto p_code = shader_code.getCode(); //TODO: handle slang data
 		RID shader = RSG::material_storage->shader_allocate();
 		bool using_server_thread = Thread::get_caller_id() == server_thread;
 		if (using_server_thread || RSG::rasterizer->can_create_resources_async()) {

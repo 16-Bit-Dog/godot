@@ -40,9 +40,12 @@
 #include "servers/rendering/shader_types.h"
 
 enum ShaderType {
-	SHADER_TYPE_TEXT,
-	SHADER_TYPE_VISUAL,
-	SHADER_TYPE_INC,
+	SHADER_TYPE_TEXT_GDSHADER,
+	SHADER_TYPE_TEXT_SLANG,
+	SHADER_TYPE_VISUAL_GDSHADER,
+	SHADER_TYPE_VISUAL_SLANG,
+	SHADER_TYPE_INC_GDSHADER,
+	SHADER_TYPE_INC_SLANG,
 	SHADER_TYPE_MAX,
 };
 
@@ -68,8 +71,8 @@ void ShaderCreateDialog::_notification(int p_what) {
 
 		case NOTIFICATION_THEME_CHANGED: {
 			static const char *shader_types[3] = { "Shader", "VisualShader", "TextFile" };
-			for (int i = 0; i < 3; i++) {
-				Ref<Texture2D> icon = get_editor_theme_icon(shader_types[i]);
+			for (int i = 0; i < 6; i++) {
+				Ref<Texture2D> icon = get_editor_theme_icon(shader_types[i/2]);
 				if (icon.is_valid()) {
 					type_menu->set_item_icon(i, icon);
 				}
@@ -85,18 +88,28 @@ void ShaderCreateDialog::_update_language_info() {
 
 	for (int i = 0; i < SHADER_TYPE_MAX; i++) {
 		ShaderTypeData shader_type_data;
-		if (i == int(SHADER_TYPE_TEXT)) {
+		if (i == int(SHADER_TYPE_TEXT_GDSHADER)) {
 			shader_type_data.use_templates = true;
 			shader_type_data.extensions.push_back("gdshader");
+			shader_type_data.extensions.push_back("res");
+			shader_type_data.extensions.push_back("tres");
 			shader_type_data.default_extension = "gdshader";
-		} else if (i == int(SHADER_TYPE_INC)) {
+		} else if (i == int(SHADER_TYPE_TEXT_SLANG)) {
+			shader_type_data.extensions.push_back("slang");
+			shader_type_data.default_extension = "slang";
+		} else if (i == int(SHADER_TYPE_INC_GDSHADER)) {
 			shader_type_data.extensions.push_back("gdshaderinc");
+			shader_type_data.extensions.push_back("res");
+			shader_type_data.extensions.push_back("tres");
 			shader_type_data.default_extension = "gdshaderinc";
+		} else if (i == int(SHADER_TYPE_INC_SLANG)) {
+			shader_type_data.extensions.push_back("slanginc");
+			shader_type_data.default_extension = "slanginc";
 		} else {
+			shader_type_data.extensions.push_back("res");
+			shader_type_data.extensions.push_back("tres");
 			shader_type_data.default_extension = "tres";
 		}
-		shader_type_data.extensions.push_back("res");
-		shader_type_data.extensions.push_back("tres");
 		type_data.push_back(shader_type_data);
 	}
 }
@@ -142,8 +155,27 @@ void ShaderCreateDialog::_create_new() {
 	Ref<Resource> shader;
 	Ref<Resource> shader_inc;
 
+	// set path
+	String lpath;
+	auto setPathForNullShader = [&] {
+		lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
+		shader_inc->set_path(lpath);
+	};
+	auto setPathForNotNullShader = [&] {
+		if (is_built_in) {
+			Node *edited_scene = get_tree()->get_edited_scene_root();
+			if (likely(edited_scene)) {
+				shader->set_path(edited_scene->get_scene_file_path() + "::");
+			}
+		} else {
+			lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
+			shader->set_path(lpath);
+		}
+	};
+	
 	switch (type_menu->get_selected()) {
-		case SHADER_TYPE_TEXT: {
+		case SHADER_TYPE_TEXT_GDSHADER:
+		case SHADER_TYPE_TEXT_SLANG: {
 			Ref<Shader> text_shader;
 			text_shader.instantiate();
 			shader = text_shader;
@@ -214,46 +246,44 @@ void fog() {
 )";
 				}
 			}
+			setPathForNotNullShader();
 			text_shader->set_code(code.as_string());
 		} break;
-		case SHADER_TYPE_VISUAL: {
+		case SHADER_TYPE_VISUAL_GDSHADER:
+		case SHADER_TYPE_VISUAL_SLANG: { // TODO: store what shader type is being used
 			Ref<VisualShader> visual_shader;
 			visual_shader.instantiate();
 			shader = visual_shader;
+			setPathForNotNullShader();
 			visual_shader->set_mode(Shader::Mode(current_mode));
+			if (type_menu->get_selected() == SHADER_TYPE_VISUAL_SLANG)
+				visual_shader->set_shader_language_type("slang");
+			else
+				visual_shader->set_shader_language_type("gdshader");
+
 		} break;
-		case SHADER_TYPE_INC: {
+		case SHADER_TYPE_INC_GDSHADER:
+		case SHADER_TYPE_INC_SLANG: {
 			Ref<ShaderInclude> include;
 			include.instantiate();
 			shader_inc = include;
+			setPathForNullShader();
 		} break;
 		default: {
 		} break;
 	}
 
 	if (shader.is_null()) {
-		String lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
-		shader_inc->set_path(lpath);
-
 		Error error = ResourceSaver::save(shader_inc, lpath, ResourceSaver::FLAG_CHANGE_PATH);
 		if (error != OK) {
 			alert->set_text(TTR("Error - Could not create shader include in filesystem."));
 			alert->popup_centered();
 			return;
 		}
-		EditorNode::get_singleton()->ensure_uid_file(lpath);
-
 		emit_signal(SNAME("shader_include_created"), shader_inc);
 	} else {
 		if (is_built_in) {
-			Node *edited_scene = get_tree()->get_edited_scene_root();
-			if (likely(edited_scene)) {
-				shader->set_path(edited_scene->get_scene_file_path() + "::");
-			}
 		} else {
-			String lpath = ProjectSettings::get_singleton()->localize_path(file_path->get_text());
-			shader->set_path(lpath);
-
 			Error error = ResourceSaver::save(shader, lpath, ResourceSaver::FLAG_CHANGE_PATH);
 			if (error != OK) {
 				alert->set_text(TTR("Error - Could not create shader in filesystem."));
@@ -306,8 +336,9 @@ void ShaderCreateDialog::_type_changed(int p_language) {
 	_path_changed(path);
 	file_path->set_text(path);
 
-	type_menu->set_item_disabled(int(SHADER_TYPE_INC), load_enabled);
-	mode_menu->set_disabled(p_language == SHADER_TYPE_INC);
+	type_menu->set_item_disabled(int(SHADER_TYPE_INC_GDSHADER), load_enabled);
+	type_menu->set_item_disabled(int(SHADER_TYPE_INC_SLANG), load_enabled);
+	mode_menu->set_disabled(p_language == SHADER_TYPE_INC_GDSHADER || p_language == SHADER_TYPE_INC_SLANG);
 	template_menu->set_disabled(!shader_type_data.use_templates);
 	template_menu->clear();
 
@@ -583,15 +614,25 @@ ShaderCreateDialog::ShaderCreateDialog() {
 		String type;
 		bool invalid = false;
 		switch (i) {
-			case SHADER_TYPE_TEXT:
-				type = "Shader";
+			case SHADER_TYPE_TEXT_GDSHADER:
+				type = "Shader (gdshader)";
 				default_type = i;
 				break;
-			case SHADER_TYPE_VISUAL:
-				type = "VisualShader";
+			case SHADER_TYPE_TEXT_SLANG:
+				type = "Shader (slang)";
+				default_type = i;
 				break;
-			case SHADER_TYPE_INC:
-				type = "ShaderInclude";
+			case SHADER_TYPE_VISUAL_GDSHADER:
+				type = "VisualShader (gdshader)";
+				break;
+			case SHADER_TYPE_VISUAL_SLANG:
+				type = "VisualShader (slang)";
+				break;
+			case SHADER_TYPE_INC_GDSHADER:
+				type = "ShaderInclude (gdshader)";
+				break;
+			case SHADER_TYPE_INC_SLANG:
+				type = "ShaderInclude (slang)";
 				break;
 			case SHADER_TYPE_MAX:
 				invalid = true;

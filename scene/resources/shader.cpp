@@ -35,6 +35,7 @@
 #include "scene/main/scene_tree.h"
 #include "servers/rendering/shader_language.h"
 #include "servers/rendering/shader_preprocessor.h"
+#include "servers/rendering/slang_shader_processor.h"
 #include "servers/rendering_server.h"
 #include "texture.h"
 
@@ -55,7 +56,7 @@ void Shader::_check_shader_rid() const {
 	MutexLock lock(shader_rid_mutex);
 	if (shader_rid.is_null() && !preprocessed_code.is_empty()) {
 		shader_rid = RenderingServer::get_singleton()->shader_create_from_code(preprocessed_code, get_path());
-		preprocessed_code = String();
+		preprocessed_code.reset();
 	}
 }
 
@@ -67,6 +68,30 @@ void Shader::_dependency_changed() {
 void Shader::_recompile() {
 	set_code(get_code());
 }
+
+String Shader::get_shader_language_type_string() const {
+	return shader_language_type_string;
+}
+
+// always set shader language type
+void Shader::set_shader_language_type(const String& p_shader_language_type) {
+	if (p_shader_language_type == "gdshader") {
+		shader_language_type = SHADER_LANGUAGE_TYPE_GDSHADER;
+		shader_language_type_string = "gdshader";
+	} else if (p_shader_language_type == "slang") {
+		shader_language_type = SHADER_LANGUAGE_TYPE_SLANG;
+		shader_language_type_string = "slang";
+	} else {
+		shader_language_type = SHADER_LANGUAGE_TYPE_GDSHADER;
+		shader_language_type_string = "gdshader";
+	}
+}
+
+// does nothing if visual shader object
+void Shader::try_set_shader_language_type(const String &p_shader_language_type) {
+	set_shader_language_type(p_shader_language_type);
+}
+
 
 void Shader::set_path(const String &p_path, bool p_take_over) {
 	Resource::set_path(p_path, p_take_over);
@@ -83,31 +108,47 @@ void Shader::set_include_path(const String &p_path) {
 }
 
 void Shader::set_code(const String &p_code) {
-	for (const Ref<ShaderInclude> &E : include_dependencies) {
+	for (const Ref<ShaderInclude> &E : dependencies) {
 		E->disconnect_changed(callable_mp(this, &Shader::_dependency_changed));
 	}
 
 	code = p_code;
-	preprocessed_code = p_code;
+	preprocessed_code.getCode() = p_code; //why do we need this ???
 
-	{
-		String path = get_path();
-		if (path.is_empty()) {
-			path = include_path;
+	String path = get_path();
+	if (path.is_empty()) {
+		path = include_path;
+	} else {
+		try_set_shader_language_type(get_path().get_extension().to_lower());
+	}
+
+	HashSet<Ref<ShaderInclude>> new_dependencies;
+	Error result;
+	switch (shader_language_type) {
+		case SHADER_LANGUAGE_TYPE_SLANG: {
+			SlangShaderProcessor slang_processor;
+			// TODO: integrate with `ShaderPreprocessor`?
+			// TODO: fill `dependencies`
+			result = slang_processor.preprocess(p_code, path, preprocessed_code.getAST(), nullptr, &new_dependencies);
+			break;
 		}
-		// Preprocessor must run here and not in the server because:
-		// 1) Need to keep track of include dependencies at resource level
-		// 2) Server does not do interaction with Resource filetypes, this is a scene level feature.
-		HashSet<Ref<ShaderInclude>> new_include_dependencies;
-		ShaderPreprocessor preprocessor;
-		Error result = preprocessor.preprocess(p_code, path, preprocessed_code, nullptr, nullptr, nullptr, &new_include_dependencies);
-		if (result == OK) {
-			// This ensures previous include resources are not freed and then re-loaded during parse (which would make compiling slower)
-			include_dependencies = new_include_dependencies;
+		case SHADER_LANGUAGE_TYPE_GDSHADER:
+		default: {
+			// Preprocessor must run here and not in the server because:
+			// 1) Need to keep track of include dependencies at resource level
+			// 2) Server does not do interaction with Resource filetypes, this is a scene level feature.
+			ShaderPreprocessor preprocessor;
+			result = preprocessor.preprocess(p_code, path, preprocessed_code.getCode(), nullptr, nullptr, nullptr, &new_dependencies);
 		}
+	};
+
+	if (result == OK) {
+		// This ensures previous include resources are not freed and then re-loaded during parse (which would make compiling slower)
+		dependencies = new_dependencies;
 	}
 
 	// Try to get the shader type from the final, fully preprocessed shader code.
+	// TODO: get shader type based on type of shader I am working with
 	String type = ShaderLanguage::get_shader_type(preprocessed_code);
 
 	if (type == "canvas_item") {
@@ -122,13 +163,14 @@ void Shader::set_code(const String &p_code) {
 		mode = MODE_SPATIAL;
 	}
 
-	for (const Ref<ShaderInclude> &E : include_dependencies) {
+	for (const Ref<ShaderInclude> &E : dependencies) {
 		E->connect_changed(callable_mp(this, &Shader::_dependency_changed));
 	}
 
 	if (shader_rid.is_valid()) {
-		RenderingServer::get_singleton()->shader_set_code(shader_rid, preprocessed_code);
-		preprocessed_code = String();
+		// TODO: correctly propegate code as AST or string, depending on what I have
+		RenderingServer::get_singleton()->shader_set_code(shader_rid, preprocessed_code.getCode());
+		preprocessed_code.reset();
 	}
 
 	emit_changed();
@@ -280,6 +322,8 @@ void Shader::_bind_methods() {
 	ClassDB::set_method_flags(get_class_static(), _scs_create("inspect_native_shader_code"), METHOD_FLAGS_DEFAULT | METHOD_FLAG_EDITOR);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "code", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_code", "get_code");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "shader_language_type_string", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_shader_language_type", "get_shader_language_type_string");
+	ADD_PROPERTY_DEFAULT("shader_language_type_string", "gdshader");
 
 	BIND_ENUM_CONSTANT(MODE_SPATIAL);
 	BIND_ENUM_CONSTANT(MODE_CANVAS_ITEM);
@@ -331,6 +375,7 @@ Ref<Resource> ResourceFormatLoaderShader::load(const String &p_path, const Strin
 
 void ResourceFormatLoaderShader::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back("gdshader");
+	p_extensions->push_back("slang");
 }
 
 bool ResourceFormatLoaderShader::handles_type(const String &p_type) const {
@@ -339,7 +384,7 @@ bool ResourceFormatLoaderShader::handles_type(const String &p_type) const {
 
 String ResourceFormatLoaderShader::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == "gdshader") {
+	if (el == "gdshader" || el == "slang") {
 		return "Shader";
 	}
 	return "";
@@ -368,6 +413,7 @@ void ResourceFormatSaverShader::get_recognized_extensions(const Ref<Resource> &p
 	if (const Shader *shader = Object::cast_to<Shader>(*p_resource)) {
 		if (shader->is_text_shader()) {
 			p_extensions->push_back("gdshader");
+			p_extensions->push_back("slang");
 		}
 	}
 }

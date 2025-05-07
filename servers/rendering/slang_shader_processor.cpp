@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  shader_types.h                                                        */
+/*  slang_shader_processor.cpp                                            */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,36 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SHADER_TYPES_H
-#define SHADER_TYPES_H
+#include "slang_shader_processor.h"
+#include "core/math/expression.h"
 
-#include "servers/rendering_server.h"
-#include "shader_language.h"
 
-class ShaderTypes {
-	struct Type {
-		HashMap<StringName, ShaderLanguage::FunctionInfo> functions;
-		Vector<ShaderLanguage::ModeInfo> modes;
-	};
+Error SlangShaderProcessor::preprocess(const String &p_code, const String &p_filename, SlangASTData& r_result, String *r_error_text, HashSet<Ref<ShaderInclude>> *r_includes) {
+	//TODO: err if import/include non slanginc shader
+	//TODO: compile AST of slang file to find all include/modules, 
+	return Error::OK;
+}
 
-	HashMap<RS::ShaderMode, Type> shader_modes;
-
-	static ShaderTypes *singleton;
-
-	HashSet<String> shader_types;
-	List<String> shader_types_list;
-	List<String> shader_language_types_list;
-
-public:
-	static ShaderTypes *get_singleton() { return singleton; }
-
-	const HashMap<StringName, ShaderLanguage::FunctionInfo> &get_functions(RS::ShaderMode p_mode) const;
-	const Vector<ShaderLanguage::ModeInfo> &get_modes(RS::ShaderMode p_mode) const;
-	const HashSet<String> &get_types() const;
-	const List<String> &get_types_list() const;
-	const List<String> &get_shader_language_types_list() const;
-
-	ShaderTypes();
-};
-
-#endif // SHADER_TYPES_H
+SlangShaderProcessor::SlangShaderProcessor() {
+}
+SlangShaderProcessor::~SlangShaderProcessor() {
+}

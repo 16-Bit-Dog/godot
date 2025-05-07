@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  shader_types.h                                                        */
+/*  slang_shader_processor.h                                              */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,36 +28,27 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SHADER_TYPES_H
-#define SHADER_TYPES_H
+#ifndef SLANG_SHADER_PREPROCESSOR_H
+#define SLANG_SHADER_PREPROCESSOR_H
 
-#include "servers/rendering_server.h"
-#include "shader_language.h"
+#include "core/string/ustring.h"
+#include "core/templates/list.h"
+#include "core/templates/local_vector.h"
+#include "core/templates/rb_map.h"
+#include "core/templates/rb_set.h"
 
-class ShaderTypes {
-	struct Type {
-		HashMap<StringName, ShaderLanguage::FunctionInfo> functions;
-		Vector<ShaderLanguage::ModeInfo> modes;
-	};
+#include "core/object/script_language.h"
+#include "scene/resources/shader_include.h"
+#include "servers/rendering/shader_code.h"
 
-	HashMap<RS::ShaderMode, Type> shader_modes;
-
-	static ShaderTypes *singleton;
-
-	HashSet<String> shader_types;
-	List<String> shader_types_list;
-	List<String> shader_language_types_list;
-
+class SlangShaderProcessor {
 public:
-	static ShaderTypes *get_singleton() { return singleton; }
 
-	const HashMap<StringName, ShaderLanguage::FunctionInfo> &get_functions(RS::ShaderMode p_mode) const;
-	const Vector<ShaderLanguage::ModeInfo> &get_modes(RS::ShaderMode p_mode) const;
-	const HashSet<String> &get_types() const;
-	const List<String> &get_types_list() const;
-	const List<String> &get_shader_language_types_list() const;
+	//TODO: integrate with shader_preprocessor (sub/super class stuff) to get FilePosition, Error and other stuff (lsp stuff)
+	Error preprocess(const String &p_code, const String &p_filename, SlangASTData& r_result, String *r_error_text, HashSet<Ref<ShaderInclude>> *r_includes);
 
-	ShaderTypes();
+	SlangShaderProcessor();
+	~SlangShaderProcessor();
 };
 
-#endif // SHADER_TYPES_H
+#endif // SHADER_PREPROCESSOR_H

@@ -36,6 +36,7 @@
 #include "core/io/resource_saver.h"
 #include "scene/resources/texture.h"
 #include "shader_include.h"
+#include "servers/rendering/shader_code.h"
 
 class Shader : public Resource {
 	GDCLASS(Shader, Resource);
@@ -53,11 +54,15 @@ public:
 
 private:
 	mutable RID shader_rid;
-	mutable String preprocessed_code;
+
+	mutable ShaderCode preprocessed_code = ShaderCode(shader_language_type);
 	mutable Mutex shader_rid_mutex;
 
 	Mode mode = MODE_SPATIAL;
-	HashSet<Ref<ShaderInclude>> include_dependencies;
+
+	ShaderLanguageType shader_language_type = SHADER_LANGUAGE_TYPE_GDSHADER;
+	String shader_language_type_string = "gdshader";
+	HashSet<Ref<ShaderInclude>> dependencies;
 	String code;
 	String include_path;
 
@@ -79,8 +84,13 @@ protected:
 	static void _bind_methods();
 
 public:
+
 	//void set_mode(Mode p_mode);
 	virtual Mode get_mode() const;
+
+	virtual void set_shader_language_type(const String &p_shader_language_type);
+	virtual void try_set_shader_language_type(const String &p_shader_language_type);
+	String get_shader_language_type_string() const;
 
 	virtual void set_path(const String &p_path, bool p_take_over = false) override;
 	void set_include_path(const String &p_path);

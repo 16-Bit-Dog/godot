@@ -39,6 +39,7 @@
 #include "core/variant/variant.h"
 #include "servers/display_server.h"
 #include "servers/rendering/rendering_device.h"
+#include "servers/rendering/shader_code.h"
 
 // Helper macros for code outside of the rendering server, but that is
 // called by the rendering server.
@@ -224,7 +225,7 @@ public:
 	};
 
 	virtual RID shader_create() = 0;
-	virtual RID shader_create_from_code(const String &p_code, const String &p_path_hint = String()) = 0;
+	virtual RID shader_create_from_code(ShaderCode &shader_code, const String &p_path_hint = String()) = 0;
 
 	virtual void shader_set_code(RID p_shader, const String &p_code) = 0;
 	virtual void shader_set_path_hint(RID p_shader, const String &p_path) = 0;
