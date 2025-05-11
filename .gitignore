@@ -263,6 +263,9 @@ bld/
 !thirdparty/**/arm/
 !thirdparty/**/arm64/
 
+# Ignore slang
+thirdparty/slang*/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 

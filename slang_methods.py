@@ -11,59 +11,63 @@ if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
 
 def get_godot_base_dependencies_path():
-        # Base Godot dependencies path
-    deps_folder = os.getenv("LOCALAPPDATA")
-        
-    if deps_folder:
-        deps_folder = os.path.join(deps_folder, "Godot", "build_deps")
-    else:
-        deps_folder = os.path.join("bin", "build_deps")
-    return deps_folder # return the real-path for clarity & debug reasons
+    # Base Godot dependencies path
+    deps_folder = "thirdparty/"
+    if(not os.path.exists(deps_folder)):
+        print("Not running scons from root godot folder, Slang will not download as expected")
+
+    return deps_folder
+
+def get_slang_folder_path():
+    return get_godot_base_dependencies_path()+"slang/"
 
 def get_slang_version():
-    return "2025.1"
-
-def get_slang_folder_name(slang_platform_name, slang_arch_name):
-    return "slang-"+get_slang_version()+"-"+slang_platform_name+"-"+slang_arch_name
+    return "2025.8"
 
 def get_slang_archive_name(slang_platform_name, slang_arch_name):
-    return get_slang_folder_name(slang_platform_name, slang_arch_name)+".zip"
-
-def get_slang_folder_path(slang_platform_name, slang_arch_name):
-    return os.path.join(get_godot_base_dependencies_path(), get_slang_folder_name(slang_platform_name, slang_arch_name))
+    return "slang-"+get_slang_version()+"-"+slang_platform_name+"-"+slang_arch_name+".zip"
 
 def get_slang_archive_path(slang_platform_name, slang_arch_name):
-    return os.path.join(get_godot_base_dependencies_path(), get_slang_archive_name(slang_platform_name, slang_arch_name))
+    return os.path.join(get_slang_folder_path(), get_slang_archive_name(slang_platform_name, slang_arch_name))
 
 def fetch_slang(slang_platform_name, slang_arch_name):
     #https://github.com/shader-slang/slang/releases/download/v2025.1/slang-2025.1-windows-x86_64.zip
-    deps_folder = get_godot_base_dependencies_path()
+    slang_folder = get_slang_folder_path()
 
     # Create dependencies folder
-    if not os.path.exists(deps_folder):
-        print("Making Dirs: "+deps_folder)
-        os.makedirs(deps_folder)
+    mustClean = True
+    if not os.path.exists(slang_folder):
+        print("Making Dirs: "+slang_folder)
+        os.makedirs(slang_folder)
+        mustClean = False
         
     slang_version = get_slang_version()
     slang_archive_name = get_slang_archive_name(slang_platform_name, slang_arch_name)
-    slang_folder_path = get_slang_folder_path(slang_platform_name, slang_arch_name)
+    slang_folder_path = get_slang_folder_path()
     slang_archive_path = get_slang_archive_path(slang_platform_name, slang_arch_name)
 
-    if not os.path.isdir(slang_folder_path):
-        if not os.path.isfile(slang_archive_path):
-            url = f"https://github.com/shader-slang/slang/releases/download/v{slang_version}/{slang_archive_name}"
-            print(f"Downloading Slang {slang_archive_name} from {url} ...")
-            urllib.request.urlretrieve(
-                url,
-                slang_archive_path,
-            )
-        
-        print(f"Extracting Slang {slang_archive_path} to {slang_folder_path} ...")
-        shutil.unpack_archive(slang_archive_path, slang_folder_path)
-        os.remove(slang_archive_path)
-        print(f"Installed Slang at {slang_folder_path}")
+    # remove all but the zip since we do not know if these files are up-to-date, only can trust the zip-name
+    if mustClean:
+        print("Cleaning previously installed Slang")
+        for i in os.listdir(slang_folder_path):
+            if(not i.endswith(".zip")):
+                ipath = slang_folder_path+str(i)
+                if(os.path.isdir(ipath)):
+                    shutil.rmtree(ipath)
+                else:
+                    os.remove(ipath)
 
-        
+    if not os.path.isfile(slang_archive_path):
+        url = f"https://github.com/shader-slang/slang/releases/download/v{slang_version}/{slang_archive_name}"
+        print(f"Downloading Slang {slang_archive_name} from {url} ...")
+        urllib.request.urlretrieve(
+            url,
+            slang_archive_path,
+        )
+    
+    print(f"Extracting Slang {slang_archive_path} to {slang_folder_path} ...")
+    shutil.unpack_archive(slang_archive_path, slang_folder_path)
+    print(f"Installed Slang at {slang_folder_path}")    
 
 # if unsupported `platformName`/`archName` is specified, the program will exit
 def install_slang(env: "SConsEnvironment", platformName, archName):
@@ -90,8 +94,8 @@ def install_slang(env: "SConsEnvironment", platformName, archName):
         sys.exit(255)
         
     fetch_slang(slang_platform_name, slang_arch_name)
-    
-    env["slang_path"] = get_slang_folder_path(slang_platform_name, slang_arch_name)
+
+    env["slang_path"] = get_slang_folder_path()
     env.AppendUnique(CPPDEFINES=["SLANG_ENABLED"])
     env.Append(LIBPATH=[os.path.realpath(os.path.join(env["slang_path"], "lib"))])
     if env.msvc:
